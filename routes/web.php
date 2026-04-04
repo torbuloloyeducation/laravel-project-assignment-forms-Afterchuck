@@ -24,15 +24,33 @@ Route::get('/formtest', function(){
     ]);
 });
 
-Route::post('/formtest', function(){
+Route::post('/formtest', function() {
+    $emails = session()->get('$emails', []);
+
+    if (count($emails) >= 5) {
+        return back()->withErrors(['email' => 'The limit of 5 emails has been reached. Please delete one to add more.']);
+    }
+
+    request()->validate([
+        'email' => ['required', 'email']
+    ]);
+
     $email = request('email');
 
-    session()->push('$emails', $email);
+    if (in_array($email, $emails)) {
+        return back()->withErrors(['email' => 'This email is already in the list.']);
+    }
 
-    return redirect('/formtest');
+    session()->push('$emails', $email);
+    return redirect('/formtest')->with('success', 'Email added successfully!');
 });
 
-Route::get('/delete-emails', function(){
-    session()->forget('$emails');
+Route::delete('/delete-email/{index}', function($index){
+    $emails = session()->get('$emails', []);
+
+    if (isset($emails[$index])) {
+        unset($emails[$index]);
+    }
+    session()->put('$emails', array_values($emails));
     return redirect('/formtest');
 });
